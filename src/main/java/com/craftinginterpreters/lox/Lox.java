@@ -7,14 +7,15 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
-import com.craftinginterpreters.lox.Scanner;
 
 public class Lox {
+    private static final Interpreter interpreter = new Interpreter();
     static boolean hadError = false;
+    static boolean hadRuntimeError = false;
 
     public static void main(String[] args) throws IOException {
         if(args.length > 1) {
-            System.out.println("Usage: jlox [script");
+            System.out.println("Usage: lox [script");
             System.exit(64);
         } else if (args.length == 1) {
             runFile(args[0]);
@@ -28,6 +29,7 @@ public class Lox {
         run(new String(bytes, Charset.defaultCharset()));
 
         if (hadError) System.exit(65);
+        if (hadRuntimeError) System.exit(70);
     }
 
     private static void runPrompt() throws IOException {
@@ -46,14 +48,30 @@ public class Lox {
     private static void run(String source) {
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens();
+        Parser parser = new Parser(tokens);
+        Expr expression = parser.parse();
 
-        for (Token token : tokens) {
-            System.out.println(token);
-        }
+        // Stop if there was a syntax error.
+        if (hadError) return;
+
+        interpreter.interpret(expression);
     }
 
     static void error(int line, String message) {
         report(line, "", message);
+    }
+
+    static void error(Token token, String message) {
+        if (token.type == TokenType.EOF) {
+            report(token.line, " at end", message);
+        } else {
+            report(token.line, " at `" + token.lexeme + "`", message);
+        }
+    }
+
+    static void runtimeError(RuntimeError error) {
+        System.err.println(error.getMessage() + "\n[line " + error.token.line + "]");
+        hadRuntimeError = true;
     }
 
     private static void report(int line, String where, String message) {

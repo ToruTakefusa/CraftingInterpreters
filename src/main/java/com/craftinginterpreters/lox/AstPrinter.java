@@ -1,6 +1,6 @@
 package com.craftinginterpreters.lox;
 
-class AstPrint implements Expr.Visitor<String> {
+class AstPrinter implements Expr.Visitor<String> {
     String print(Expr expr) {
         return expr.accept(this);
     }
@@ -49,6 +49,6 @@ class AstPrint implements Expr.Visitor<String> {
                 new Expr.Grouping(
                         new Expr.Literal(45.67)));
 
-        System.out.println(new AstPrint().print(expression));
+        System.out.println(new AstPrinter().print(expression));
     }
 }
